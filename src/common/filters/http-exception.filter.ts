@@ -9,6 +9,7 @@ import {
 import { Request, Response } from 'express';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { UniqueConstraintError } from 'sequelize';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -20,12 +21,24 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const status =
-      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
-
-    const message =
       exception instanceof HttpException
-        ? exception.getResponse()
-        : { message: 'Internal server error', statusCode: 500 };
+        ? exception.getStatus()
+        : exception instanceof UniqueConstraintError
+          ? HttpStatus.CONFLICT
+          : HttpStatus.INTERNAL_SERVER_ERROR;
+
+    let message: string | object = 'Internal server error';
+
+    if (exception instanceof HttpException) {
+      message = exception.getResponse();
+    } else if (exception instanceof UniqueConstraintError) {
+      message = {
+        message: 'Database constraint violation',
+        error: exception.errors[0]?.message,
+      };
+    } else {
+      message = { message: 'Internal server error', statusCode: 500 };
+    }
 
     const errorLog = {
       timestamp: new Date().toISOString(),
@@ -41,7 +54,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (status >= 500) {
       this.logger.error('Error critico de servidor', errorLog);
     } else {
-      this.logger.warn('Error Controlado (Ciente)', errorLog);
+      this.logger.warn('Error Controlado (Cliente)', errorLog);
     }
 
     response.status(status).json({

@@ -6,31 +6,34 @@ import { WinstonModule } from 'nest-winston';
 import winston from 'winston';
 import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { UserModule } from './modules/users/user.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }),
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
 
-  SequelizeModule.forRootAsync({
-    inject: [ConfigService],
-    useFactory: getDatabaseConfig,
-  }),
-  WinstonModule.forRoot({
-    transports: [
-      new winston.transports.Console({
-        format: winston.format.combine(
-          winston.format.timestamp(),
-          winston.format.ms(),
-          winston.format.json(),
-        ),
-      }),
-    ],
-  }),
+    SequelizeModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: getDatabaseConfig,
+    }),
+    WinstonModule.forRoot({
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.ms(),
+            winston.format.json(),
+          ),
+        }),
+      ],
+    }),
+    UserModule,
   ],
   providers: [
     {
       provide: APP_FILTER,
-      useClass: AllExceptionsFilter
-    }
-  ]
+      useClass: AllExceptionsFilter,
+    },
+  ],
 })
-export class AppModule { }
+export class AppModule {}

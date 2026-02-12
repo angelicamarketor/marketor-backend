@@ -7,9 +7,9 @@ export abstract class BaseHttpClient {
 
   /**
    * Método genérico para ejecutar peticiones HTTP de forma segura.
-   * @param requestPromise La promesa de la petición 
-   * @param context Objeto con datos para el log 
-   * @param errorMessage Mensaje personalizado si falla todo 
+   * @param requestPromise La promesa de la petición
+   * @param context Objeto con datos para el log
+   * @param errorMessage Mensaje personalizado si falla todo
    */
   protected async safeRequest<T>(
     requestPromise: Promise<{ data: T }>,
