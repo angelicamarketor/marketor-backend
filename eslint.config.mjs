@@ -1,4 +1,3 @@
-// @ts-check
 import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
@@ -29,7 +28,9 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+      'lines-between-class-members': ['error', 'always', { exceptAfterSingleLine: true }],
+      'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 0 }],
+      "prettier/prettier": "error",
     },
   },
 );
