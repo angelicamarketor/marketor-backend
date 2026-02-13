@@ -13,6 +13,7 @@ import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { User } from '../model/user.model';
 import { UserService } from '../service/user.service';
+import { UserID } from 'src/common/decorators/user.decorator';
 
 @Controller('users')
 export class UserController {
@@ -31,6 +32,12 @@ export class UserController {
   @Get('uuid/:uuid')
   async findByUuid(@Param('uuid', ParseUUIDPipe) uuid: string): Promise<User> {
     return this.userService.findByUuid(uuid);
+  }
+
+  @Get('profile')
+  getProfile(@UserID() idUser: number) {
+    console.log('ID recibido:', idUser);
+    return this.userService.findById(idUser);
   }
 
   @Post()
