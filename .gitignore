@@ -42,7 +42,8 @@ lerna-debug.log*
 .env.production.local
 .env.local
 /generar-token.js
-
+/token-first-login.js
+/token-with-user.js
 # temp directory
 .temp
 .tmp

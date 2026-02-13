@@ -4,23 +4,26 @@ import {
   Model,
   DataType,
   PrimaryKey,
-  AutoIncrement,
   AllowNull,
   Unique,
+  Default,
+  ForeignKey,
+  BelongsTo,
 } from 'sequelize-typescript';
+import { State } from 'src/common/catalogs/state/state.model';
 import { UserStateEnum } from '../constants/user-state.enum';
 
-@Table({ tableName: 'user', timestamps: true, updatedAt: 'updatedAt', createdAt: 'createdAt' })
+@Table({
+  tableName: 'user',
+  timestamps: true,
+  updatedAt: 'updatedAt',
+  createdAt: 'createdAt',
+})
 export class User extends Model {
   @PrimaryKey
-  @AutoIncrement
-  @Column(DataType.INTEGER)
-  idUser: number;
-
-  @AllowNull(false)
-  @Unique
+  @Default(DataType.UUIDV4)
   @Column(DataType.UUID)
-  uuid: string;
+  declare idUser: string;
 
   @AllowNull(false)
   @Column(DataType.STRING(100))
@@ -43,7 +46,12 @@ export class User extends Model {
   @Column(DataType.STRING(100))
   idCognito: string;
 
+  @ForeignKey(() => State)
   @AllowNull(false)
-  @Column(DataType.STRING(20))
-  state: UserStateEnum;
+  @Default(UserStateEnum.ACTIVE)
+  @Column(DataType.INTEGER)
+  idState: number;
+
+  @BelongsTo(() => State)
+  state: State;
 }

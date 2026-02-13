@@ -41,5 +41,5 @@ export class CreateUserDto {
 
   @IsOptional()
   @IsEnum(UserStateEnum)
-  state?: UserStateEnum;
+  idState: UserStateEnum;
 }

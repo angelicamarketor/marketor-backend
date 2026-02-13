@@ -1,10 +1,9 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+
 import { UserDao } from '../dao/user.dao';
 import { User } from '../model/user.model';
 import { CreateUserDto } from '../dto/create-user.dto';
-import { UserStateEnum } from '../constants/user-state.enum';
 import { UpdateUserDto } from '../dto/update-user.dto';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class UserService {
@@ -14,63 +13,52 @@ export class UserService {
     return this.userDao.findAll();
   }
 
-  async findById(idUser: number): Promise<User> {
-    return this.getUserOrFail(idUser);
+  async findById(id: string): Promise<User> {
+    return this.getUserOrFail(id);
   }
 
-  async findByUuid(uuid: string): Promise<User> {
-    const user = await this.userDao.findByUuid(uuid);
+  async create(dto: CreateUserDto): Promise<User> {
+    const existing = await this.userDao.findByEmail(dto.email);
 
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    return user;
-  }
-
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const existingUser = await this.userDao.findByEmail(createUserDto.email);
-    if (existingUser) {
+    if (existing) {
       throw new ConflictException('Email already exists');
     }
-    const userData: Partial<User> = {
-      ...createUserDto,
-      uuid: uuidv4(),
-      state: UserStateEnum.ACTIVE,
-      lastLogin: createUserDto.lastLogin ? new Date(createUserDto.lastLogin) : undefined,
-    };
 
-    return this.userDao.create(userData);
+    return this.userDao.create({
+      ...dto,
+      lastLogin: dto.lastLogin ? new Date(dto.lastLogin) : undefined,
+    });
   }
 
-  async update(idUser: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.getUserOrFail(idUser);
+  async update(id: string, dto: UpdateUserDto): Promise<User> {
+    const user = await this.getUserOrFail(id);
 
-    if (updateUserDto.email && updateUserDto.email !== user.email) {
-      const existing = await this.userDao.findByEmail(updateUserDto.email);
+    if (dto.email && dto.email !== user.email) {
+      const existing = await this.userDao.findByEmail(dto.email);
+
       if (existing) {
         throw new ConflictException('Email already exists');
       }
     }
-    await this.userDao.update(idUser, {
-      ...updateUserDto,
-      lastLogin: updateUserDto.lastLogin ? new Date(updateUserDto.lastLogin) : undefined,
+    await this.userDao.update(id, {
+      ...dto,
+      lastLogin: dto.lastLogin ? new Date(dto.lastLogin) : undefined,
     });
 
-    return this.getUserOrFail(idUser);
+    return this.getUserOrFail(id);
   }
 
-  async delete(idUser: number): Promise<void> {
-    await this.getUserOrFail(idUser);
+  async delete(id: string): Promise<void> {
+    await this.getUserOrFail(id);
 
-    await this.userDao.delete(idUser);
+    await this.userDao.delete(id);
   }
 
-  private async getUserOrFail(idUser: number): Promise<User> {
-    const user = await this.userDao.findById(idUser);
+  private async getUserOrFail(id: string): Promise<User> {
+    const user = await this.userDao.findById(id);
 
     if (!user) {
-      throw new NotFoundException(`User with id ${idUser} not found`);
+      throw new NotFoundException(`User ${id} not found`);
     }
 
     return user;

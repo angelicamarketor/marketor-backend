@@ -10,38 +10,38 @@ export class UserDao {
   ) {}
 
   async findAll(): Promise<User[]> {
-    return this.userModel.findAll();
+    return this.userModel.findAll({
+      include: ['state'],
+    });
   }
 
-  async findById(idUser: number): Promise<User | null> {
-    return this.userModel.findByPk(idUser);
-  }
-
-  async findByUuid(uuid: string): Promise<User | null> {
-    return this.userModel.findOne({
-      where: { uuid },
+  async findById(id: string): Promise<User | null> {
+    return this.userModel.findByPk(id, {
+      include: ['state'],
     });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.userModel.findOne({ where: { email } });
+    return this.userModel.findOne({
+      where: { email },
+    });
   }
 
   async create(user: Partial<User>): Promise<User> {
     return this.userModel.create(user);
   }
 
-  async update(idUser: number, user: Partial<User>): Promise<number> {
-    const [affectedRows] = await this.userModel.update(user, {
-      where: { idUser },
+  async update(id: string, user: Partial<User>): Promise<number> {
+    const [rows] = await this.userModel.update(user, {
+      where: { id },
     });
 
-    return affectedRows;
+    return rows;
   }
 
-  async delete(idUser: number): Promise<void> {
+  async delete(id: string): Promise<void> {
     await this.userModel.destroy({
-      where: { idUser },
+      where: { id },
     });
   }
 }

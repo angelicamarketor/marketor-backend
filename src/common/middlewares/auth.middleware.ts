@@ -4,17 +4,22 @@ import axios, { AxiosError } from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 interface InterfaceJWTTokenDecode {
+  sub: string;
   token_use: string;
   auth_time: number;
-  name: string;
-  'custom:idUser': string;
+  name?: string;
+  email?: string;
+
+  'custom:idUser'?: string;
+  'custom:role'?: string;
+
   exp: number;
-  'custom:role': string;
 }
 
 declare module 'express' {
   interface Request {
     idUser?: number;
+    cognitoId?: string;
   }
 }
 
@@ -27,11 +32,12 @@ export class AuthMiddleware implements NestMiddleware {
   private async getUserById(idUser: number): Promise<void> {
     const urlBase = process.env.URL_BASE_REQUEST_GET_USER_BY_ID;
 
-    if (!urlBase) throw new InternalServerErrorException('Server configuration error');
+    if (!urlBase) {
+      throw new InternalServerErrorException('Server configuration error');
+    }
 
     try {
       const url = `${urlBase}/${idUser}`;
-      console.log(`Middleware calling internal API: ${url}`);
 
       await axios.get(url, {
         headers: {
@@ -40,46 +46,74 @@ export class AuthMiddleware implements NestMiddleware {
       });
     } catch (error) {
       const axiosError = error as AxiosError;
-      console.log('Error verifying user via HTTP', axiosError.message);
+
+      console.error('Error verifying user via HTTP:', axiosError.message);
+
       throw new Error('User not found in database');
     }
   }
 
+  private extractToken(req: Request): string | null {
+    const authHeader = req.headers.authorization;
+
+    if (authHeader?.startsWith('Bearer ')) {
+      return authHeader.replace('Bearer ', '').trim();
+    }
+
+    if (req.headers['x-auth-id']) {
+      return req.headers['x-auth-id'] as string;
+    }
+
+    if (req.method.toUpperCase() === 'GET' && req.query['x-auth-id']) {
+      return req.query['x-auth-id'] as string;
+    }
+
+    return null;
+  }
+
   async use(req: Request, res: Response, next: NextFunction) {
     if (req.headers['x-internal-skip-auth'] === 'true') {
-      console.log('Petición interna detectada: Saltando AuthMiddleware');
       return next();
     }
 
     try {
-      let token: string | null = null;
-      if (req.method.toUpperCase() === 'GET' && req.query['x-auth-id']) {
-        token = req.query['x-auth-id'] as string;
-      } else if (req.headers['x-auth-id']) {
-        token = req.headers['x-auth-id'] as string;
-      }
+      const token = this.extractToken(req);
 
       if (!token) {
-        res.status(401).json('unauthorized, token is required');
+        res.status(401).json({
+          message: 'Unauthorized: token is required',
+        });
         return;
       }
-
       const info = this.decodeJWTToken(token);
-      const idUser = Number(info['custom:idUser']);
 
-      if (!idUser || idUser <= 0 || isNaN(idUser)) {
-        res.status(401).json('Unauthorized, token is not valid');
-        return;
+      const cognitoId = info.sub;
+
+      let idUser: number | null = null;
+
+      if (info['custom:idUser']) {
+        idUser = Number(info['custom:idUser']);
       }
 
-      await this.getUserById(idUser);
-      console.log(`User verificado via HTTP: ${idUser}`);
+      if (!cognitoId) {
+        res.status(401).json({
+          message: 'Unauthorized: invalid token',
+        });
+        return;
+      }
+      if (idUser && !isNaN(idUser) && idUser > 0) {
+        await this.getUserById(idUser);
+      }
+      req.idUser = idUser ?? undefined;
+      req.cognitoId = cognitoId;
 
-      req.idUser = idUser;
       next();
     } catch (err) {
       console.error('Auth error:', err);
-      res.status(500).json('Error with processing token in the server - Custom Process');
+
+      res.status(500).json({
+        message: 'Error processing authentication token',
+      });
       return;
     }
   }

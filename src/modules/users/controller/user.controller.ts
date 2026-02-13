@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
-  Param,
-  Body,
-  ParseIntPipe,
-  ParseUUIDPipe,
-} from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { User } from '../model/user.model';
@@ -25,17 +15,12 @@ export class UserController {
   }
 
   @Get('id/:id')
-  async findById(@Param('id', ParseIntPipe) idUser: number): Promise<User> {
+  async findById(@Param('id') idUser: string): Promise<User> {
     return this.userService.findById(idUser);
   }
 
-  @Get('uuid/:uuid')
-  async findByUuid(@Param('uuid', ParseUUIDPipe) uuid: string): Promise<User> {
-    return this.userService.findByUuid(uuid);
-  }
-
   @Get('profile')
-  getProfile(@UserID() idUser: number) {
+  getProfile(@UserID() idUser: string) {
     console.log('ID recibido:', idUser);
     return this.userService.findById(idUser);
   }
@@ -46,15 +31,12 @@ export class UserController {
   }
 
   @Put(':id')
-  async update(
-    @Param('id', ParseIntPipe) idUser: number,
-    @Body() updateUserDto: UpdateUserDto,
-  ): Promise<User> {
+  async update(@Param('id') idUser: string, @Body() updateUserDto: UpdateUserDto): Promise<User> {
     return this.userService.update(idUser, updateUserDto);
   }
 
   @Delete(':id')
-  async delete(@Param('id', ParseIntPipe) idUser: number): Promise<void> {
+  async delete(@Param('id') idUser: string): Promise<void> {
     return this.userService.delete(idUser);
   }
 }
